@@ -64,6 +64,7 @@ pub fn parse_url(input: &str, assume_scheme: &str) -> Option<ParsedUrl> {
 
 /// Parses a path/endpoint-only input (no scheme or host).
 /// Accepts lines like `/api/v1/users/{id}`, `?action=details`, `/path?query=1`.
+/// If the input looks like a full URL, extracts only the path + query portion.
 /// Returns a ParsedUrl with empty scheme and host.
 #[must_use]
 pub fn parse_path(input: &str) -> Option<ParsedUrl> {
@@ -72,11 +73,31 @@ pub fn parse_path(input: &str) -> Option<ParsedUrl> {
         return None;
     }
 
-    // Handle tool output formats: "/path [200] [tech]"
+    // Handle tool output formats: "/path [200] [tech]" or "https://... [200] [tech]"
     let trimmed = trimmed.split_whitespace().next().unwrap_or(trimmed);
     if trimmed.is_empty() {
         return None;
     }
+
+    // If it looks like a full URL, extract just the path + query
+    if trimmed.contains("://") {
+        if let Ok(url) = Url::parse(trimmed) {
+            let path = percent_decode(url.path());
+            let query = url.query().map(std::string::ToString::to_string);
+            return Some(ParsedUrl {
+                original: trimmed.to_string(),
+                scheme: String::new(),
+                host: String::new(),
+                port: None,
+                path,
+                query,
+            });
+        }
+        return None;
+    }
+
+    // Handle protocol-relative URLs: //cdn.example.com/file.js
+    let trimmed = trimmed.strip_prefix("//").unwrap_or(trimmed);
 
     // Split path and query
     let (path, query) = if let Some(pos) = trimmed.find('?') {

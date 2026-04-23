@@ -542,6 +542,25 @@ fn test_parse_path_with_tool_output() {
 }
 
 #[test]
+fn test_parse_path_extracts_url_path() {
+    let parsed = parse_path("https://api.example.com/v1/users/123?token=abc").unwrap();
+    assert_eq!(parsed.scheme, "");
+    assert_eq!(parsed.host, "");
+    assert_eq!(parsed.path, "/v1/users/123");
+    assert_eq!(parsed.query.as_deref(), Some("token=abc"));
+}
+
+#[test]
+fn test_parse_path_mixed_input_groups_correctly() {
+    let p1 = parse_path("https://api.example.com/v1/users/123").unwrap();
+    let p2 = parse_path("/v1/users/456").unwrap();
+    let p3 = parse_path("https://api.example.com/v1/users/789?token=x").unwrap();
+    assert_eq!(p1.path, "/v1/users/123");
+    assert_eq!(p2.path, "/v1/users/456");
+    assert_eq!(p3.path, "/v1/users/789");
+}
+
+#[test]
 fn test_parse_path_empty() {
     assert!(parse_path("").is_none());
     assert!(parse_path("   ").is_none());
@@ -581,6 +600,19 @@ fn test_deduplicate_path_only_query_params() {
     let result = deduplicate(Cursor::new(input), &config, "https", false, false, true);
     assert_eq!(result.total_urls, 5);
     assert_eq!(result.unique_fingerprints, 3);
+}
+
+#[test]
+fn test_deduplicate_path_only_mixed_urls_and_paths() {
+    let config = Config::default();
+    let input = "https://api.example.com/v1/users/12345678\n\
+                 /v1/users/87654321\n\
+                 https://api.example.com/v1/users/11111111?token=abc\n\
+                 /v1/users/22222222?token=xyz\n";
+    let result = deduplicate(Cursor::new(input), &config, "https", false, false, true);
+    // 2 groups: /v1/users/{id} and /v1/users/{id}?token={dynamic}
+    assert_eq!(result.total_urls, 4);
+    assert_eq!(result.unique_fingerprints, 2);
 }
 
 // ── Edge Cases ──────────────────────────────────────────────

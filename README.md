@@ -121,6 +121,27 @@ urlsieve --diff baseline.txt --diff-strict -i new_urls.txt
 urlsieve --diff baseline.txt --strip-query -i new_urls.txt
 ```
 
+## Path-Only Mode (Endpoints/Routes)
+
+Deduplicate lists of paths, endpoints, or routes without requiring full URLs. Accepts output from Burp, API docs, route scanners, and any tool that outputs paths:
+
+```bash
+# Deduplicate endpoint lists (paths only, no scheme/host)
+cat endpoints.txt | urlsieve --path-only --stats
+
+# Works with tool output that includes metadata
+cat burp_paths.txt | urlsieve --path-only
+
+# Combine with --strip-query for route-level dedup
+cat routes.txt | urlsieve --path-only --strip-query --stats
+```
+
+Input examples that work with `--path-only`:
+- `/api/v1/users/12345`
+- `/api/v1/users/67890` → grouped with above (same fingerprint)
+- `?action=details`
+- `/search?q=test [200] [Cloudflare]` → metadata stripped automatically
+
 ## Learn Mode
 
 Analyze URL cardinality to determine which path segments and query parameters are dynamic, then automatically generate a config:
@@ -197,6 +218,7 @@ pattern_segments = ["v\\d+"]
 | `--diff` | Compare against baseline file (fingerprint match) |
 | `--diff-strict` | Use exact URL matching in diff mode |
 | `--sort` | Sort output by fingerprint (deterministic, disables streaming) |
+| `--path-only` | Treat input as paths/endpoints only (no scheme/host) |
 
 ## Common Workflows
 
@@ -225,6 +247,9 @@ urlsieve -i hosts.txt --assume-scheme https
 
 # Dedup ignoring query params (useful when only params differ)
 urlsieve -i urls.txt --strip-query --stats
+
+# Deduplicate endpoint/route lists (no scheme/host needed)
+cat endpoints.txt | urlsieve --path-only --stats
 
 # Save invalid URLs for inspection
 urlsieve -i urls.txt --invalid-output invalid.txt --stats
