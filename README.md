@@ -142,7 +142,7 @@ sieve --learn --apply -i urls.txt --stats
 
 Sieve is engineered to handle pipelines with tens of millions of URLs:
 
-- **Throughput:** ~1M URLs/second on a modern laptop (streaming mode).
+- **Throughput:** ~400k URLs/sec on a modern processor (full pipeline: parse + fingerprint + dedup).
 - **Memory:** ~8 bytes per unique fingerprint in streaming mode (only a `u64` hash is stored).
 - **Batch mode:** Holds full result set in memory; suitable for datasets up to several million URLs.
 - **Reusable fingerprint buffer:** A single pre-allocated `String` is reused across all URLs, avoiding heap allocation per URL in the hot path.
