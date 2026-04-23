@@ -490,6 +490,21 @@ fn test_parse_url_valid_percent_encoding() {
     assert_eq!(parsed.path, "/path/hello world");
 }
 
+#[test]
+fn test_parse_url_httpx_output_format() {
+    let parsed = parse_url("https://example.com/path [200] [Cloudflare,HSTS]", "https").unwrap();
+    assert_eq!(parsed.host, "example.com");
+    assert_eq!(parsed.path, "/path");
+}
+
+#[test]
+fn test_parse_url_httpx_with_query_params() {
+    let parsed = parse_url("https://example.com/search?q=test [301] [Cloudflare]", "https").unwrap();
+    assert_eq!(parsed.host, "example.com");
+    assert_eq!(parsed.path, "/search");
+    assert_eq!(parsed.query.as_deref(), Some("q=test"));
+}
+
 // ── Edge Cases ──────────────────────────────────────────────
 
 #[test]

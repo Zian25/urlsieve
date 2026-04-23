@@ -18,6 +18,12 @@ pub fn parse_url(input: &str, assume_scheme: &str) -> Option<ParsedUrl> {
         return None;
     }
 
+    // Handle tool output formats (httpx, etc.): "https://example.com [200] [tech]"
+    let trimmed = trimmed.split_whitespace().next().unwrap_or(trimmed);
+    if trimmed.is_empty() {
+        return None;
+    }
+
     // Handle protocol-relative URLs: //cdn.example.com/file.js
     let trimmed = trimmed.strip_prefix("//").unwrap_or(trimmed);
 
